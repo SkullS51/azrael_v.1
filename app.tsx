@@ -9,22 +9,39 @@ export default function AzraelCommand() {
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
+    const handleSend = async () => {
     if (!input) return;
     const userMsg = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
-    
-    // THE BRUTAL LOGIC SIMULATION (Connect your API endpoint here)
-    setTimeout(() => {
+    setInput('');
+
+    try {
+      // REACHING INTO THE LOCAL IRON (OLLAMA DEFAULT PORT)
+      const response = await fetch('http://localhost:11434/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3', // The 8B Scalpel
+          messages: [...messages, userMsg],
+          stream: false // Set to true if you want the "dripping" effect later
+        }),
+      });
+
+      if (!response.ok) throw new Error("LOCAL_CORE_OFFLINE");
+
+      const data = await response.json();
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `[SENTRY_ALERT] Analyzing: "${input}". 
-                  [ASSISTANT_LOG] Scaling swarm to 2300. Optimizing 7 Robotics Handshake. 
-                  [VOICE] The static is clear, Architect. Proceed.` 
+        content: data.message.content 
       }]);
-    }, 800);
-    setInput('');
+    } catch (error) {
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "[CRITICAL_ERROR] LOCAL_IRON_DISCONNECTED. ENSURE OLLAMA IS RUNNING." 
+      }]);
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-black text-red-500 font-mono p-4 flex flex-col items-center">
